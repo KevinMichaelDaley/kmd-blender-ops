@@ -1,8 +1,9 @@
+
 import bmesh, bpy
 from mathutils import Matrix, Vector
 import math
 def get_active_vert(bm):
-  """simple utility function to search the selection history for the 'active' vertex; note that this only means anything in blender
+    """simple utility function to search the selection history for the 'active' vertex; note that this only means anything in blender
   terminology if the immediately last object selected was an vertex"""
     if bm.select_history:
         elem = bm.select_history[-1]
@@ -11,7 +12,7 @@ def get_active_vert(bm):
     return None
 
 def get_active_edge(bm):
-  """simple utility function to search the selection history for the 'active' edge; note that this only means anything in blender
+    """simple utility function to search the selection history for the 'active' edge; note that this only means anything in blender
   terminology if the immediately last object selected was an edge"""
     if bm.select_history:
         elem = bm.select_history[-1]
@@ -19,12 +20,12 @@ def get_active_edge(bm):
             return elem
     return None
 def get_selected_loop_sorted(m):
-  """get all the selected vertices in the currently selected edge loop (must be one contiguous edge loop with an active vertex or edge)
+    """get all the selected vertices in the currently selected edge loop (must be one contiguous edge loop with an active vertex or edge)
   and the edges between them and sort them so that the active vertex is first and all subsequent edges are in order by connectivity:
   *--*--*---*---*
   is sorted from left to right.
   If there is an edge from the last to the first vertex it is included at the end.
-  """
+    """
     selected_verts=[]
     for v in m.verts:
         if v.select:
@@ -67,7 +68,7 @@ def get_selected_loop_sorted(m):
     
 def four_pole_junction(me):
   
-  """common topology/edge-flow manipulation routine: turn
+    """common topology/edge-flow manipulation routine: turn
   *   --  *  --  *
   |              |
   *              *
@@ -111,7 +112,7 @@ def four_pole_junction(me):
     bmesh.update_edit_mesh(me)
     return True
 def one_pole_junction(me):
-  """common topology/edge-flow manipulation routine: turn
+    """common topology/edge-flow manipulation routine: turn
   * - * - *
   |       |
   *       |
@@ -140,7 +141,7 @@ def one_pole_junction(me):
     bmesh.update_edit_mesh(me)
     return True        
 def project_onto_shapes(me_ob, axis='normal',scale_factor=1.0, max_distance=1.0, break_on_max_dist=True, invert=False):
-  """this function projects the selected vertices along the 'axis' argument (which could be +/- X,Y,Z, the normal, or a vector
+    """this function projects the selected vertices along the 'axis' argument (which could be +/- X,Y,Z, the normal, or a vector
      towards the surface of all the other objects in the scene using a raycast.  It is quite handy for creating complex deformations.
      Arguments:
      'axis' is the vector you want to use as a ray from the current vertex.  This is used to compute the distance to the nearest point on the inactive scene objects.
@@ -280,6 +281,8 @@ def collapse_loop(me):
     bmesh.update_edit_mesh(me)    
     return True
      
+#project_onto_shapes(bpy.context.active_object,scale_factor=1, max_distance=10,
+#        break_on_max_dist=False, axis='-Z', invert=False)
 def count_vertices(me):
     m=bmesh.from_edit_mesh(me)
     sel_v = [v for v in m.verts if v.select]
@@ -288,7 +291,7 @@ def count_vertices(me):
 def roll(l,i):
     return list(l[i:])+list(l[:i])
 def select_congruent(me, threshold=1e-4):
-  """ This function (still being tested) selects every patch of faces congruent to the currently-selected face patch;
+    """ This function (still being tested) selects every patch of faces congruent to the currently-selected face patch;
       it does not consider rotated or scaled versions as being congruent.  For now it only works with translated versions
       of the selection; it will also usually fail to capture congruences within a small tolerance due to extreme sensitivity."""
       
@@ -402,3 +405,11 @@ def align_loop(me, axis=Vector((0,1,0))):
             v2.co=v2.co+(v.co-v2.co).dot(axis)*axis
     bmesh.update_edit_mesh(me)
     return True           
+               
+#select_congruent(bpy.context.object.data)           
+#align_loop(bpy.context.object.data,Vector((0,1,0)))
+#collapse_loop(bpy.context.object.data)
+#one_pole_junction(bpy.context.object.data)
+print(count_vertices(bpy.context.object.data))
+#align_loop(bpy,context.object.data,axis=Vecto
+
