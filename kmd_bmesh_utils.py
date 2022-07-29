@@ -280,8 +280,6 @@ def collapse_loop(me):
     bmesh.update_edit_mesh(me)    
     return True
      
-#project_onto_shapes(bpy.context.active_object,scale_factor=1, max_distance=10,
-#        break_on_max_dist=False, axis='-Z', invert=False)
 def count_vertices(me):
     m=bmesh.from_edit_mesh(me)
     sel_v = [v for v in m.verts if v.select]
@@ -404,10 +402,3 @@ def align_loop(me, axis=Vector((0,1,0))):
             v2.co=v2.co+(v.co-v2.co).dot(axis)*axis
     bmesh.update_edit_mesh(me)
     return True           
-               
-#select_congruent(bpy.context.object.data)           
-#align_loop(bpy.context.object.data,Vector((0,1,0)))
-#collapse_loop(bpy.context.object.data)
-#one_pole_junction(bpy.context.object.data)
-print(count_vertices(bpy.context.object.data))
-#align_loop(bpy,context.object.data,axis=Vecto
