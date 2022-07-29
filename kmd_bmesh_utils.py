@@ -45,6 +45,8 @@ def get_selected_loop_sorted(m):
            edges[v.index].append(e)
            edges[v2.index].append(e)
     v0=get_active_vert(m)
+    if v0 is None:
+        return [],[]
     loop_v=[v0]
     loop_e=[]
     all_done=False
@@ -190,7 +192,7 @@ def project_onto_shapes(me_ob, axis='normal',scale_factor=1.0, max_distance=1.0,
         if axis=='normal':
             axis_vector = B.to_3x3().normalized() @ n
         elif axis=='-normal':
-            axis_vector = B @ (-n)
+            axis_vector = B.to_3x3().normalized() @ n
         elif axis=='Z':
             axis_vector = Vector((0,0,1))
         elif axis=='Y':
@@ -410,6 +412,149 @@ def align_loop(me, axis=Vector((0,1,0))):
 #align_loop(bpy.context.object.data,Vector((0,1,0)))
 #collapse_loop(bpy.context.object.data)
 #one_pole_junction(bpy.context.object.data)
-print(count_vertices(bpy.context.object.data))
+#print(count_vertices(bpy.context.object.data))
 #align_loop(bpy,context.object.data,axis=Vecto
 
+bl_info = {
+    "name": "kmd_ops",
+    "author": "kmd",
+    "version": (0, 1),
+    "blender" : (3,2, 1),
+    "location": "",
+    "warning": "",
+    "wiki_url": "",
+    "tracker_url": "",
+    "category": ""
+}
+    
+        
+axes_enum = [
+    ("Z", "Z", ""),
+    ("Y", "Y", ""),
+    ("X", "X", ""),
+    ("-Z", "-Z", ""),
+    ("-Y", "-Y", ""),
+    ("-X", "-X", ""),
+    ("-normal", "-normal", ""),
+    ("normal", "normal", ""),
+    ("custom", "custom", ""),
+]
+
+
+    
+class ProjectOntoShapes(bpy.types.Operator):
+    """Projects selected vertices onto, towards, or away from inactive scene objects using raycast"""
+    bl_idname = "object.project_onto_shapes"
+    bl_label = "Project Onto Shapes"
+    bl_options = {'REGISTER', 'UNDO'}
+    axis: bpy.props.EnumProperty(items=axes_enum,name='axis',description='axis on which to raycast', default='normal')
+    custom_axis: bpy.props.FloatVectorProperty(name='custom axis', description='axis parameter if "custom" is specified')
+    scale_factor: bpy.props.FloatProperty(name='scale factor')
+    max_distance: bpy.props.FloatProperty(name='limit', description='maximum displacement to apply')
+    break_on_max_dist: bpy.props.BoolProperty(name='break on limit', description='do nothing if no hit found')
+    invert: bpy.props.BoolProperty(name='invert', description='if True, raycast in the specified direction, displace in the opposite direction')
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None and context.active_object.type=='MESH' and context.mode == 'EDIT_MESH'
+    def execute(self, context):
+        me_ob=context.active_object
+        self.report({'INFO'}, f"axis: {self.axis}")
+        self.report({'INFO'}, f"custom axis: {self.custom_axis}")
+        self.report({'INFO'}, f"scale factor: {self.scale_factor}")
+        self.report({'INFO'}, f"limit: {self.max_distance}")
+        self.report({'INFO'}, f"break_on_limit: {self.break_on_max_dist}")
+        self.report({'INFO'}, f"invert: {self.invert}")
+        axis=self.axis if self.axis!= 'custom' else self.custom_axis
+        project_onto_shapes(me_ob, axis, self.scale_factor, self.max_distance, self.break_on_max_dist, self.invert)
+        print(f'{self.bl_idname}(ctx.active_object, {axis}, {self.scale_factor}, {self.max_distance}, {self.break_on_max_dist}, {self.invert})')
+        return {'FINISHED'}
+
+
+class AlignPairs(bpy.types.Operator):
+    """Align pairs of adjacent edges"""
+    bl_idname = "object.align_pairs"
+    bl_label = "AlignPairs"
+    bl_options = {'REGISTER', 'UNDO'}
+    axis: bpy.props.FloatVectorProperty(name='axis', description='axis along which to perform alignment')
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None and context.active_object.type=='MESH' and context.mode == 'EDIT_MESH'
+    def execute(self, context):
+        self.report({'INFO'}, f"axis: {self.axis}")
+        me_ob=context.active_object
+        align_loops(me_ob.data,self.axis)
+        print (f'{self.bl_idname}(ctx.active_object, {self.axis})')
+        return {'FINISHED'}
+
+class LoopUncut(bpy.types.Operator):
+    """Undo loop cut"""
+    bl_idname = "object.loop_uncut"
+    bl_label = "Loop Uncut"
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None and context.active_object.type=='MESH' and context.mode == 'EDIT_MESH'
+    def execute(self, context):
+        me_ob=context.active_object
+        collapse_loop(me_ob.data)
+        print (f'{self.bl_idname}(ctx.active_object)')
+        return {'FINISHED'}
+
+junction_enum = [
+('unipolar', 'unipolar', ''),
+('diamond', 'diamond', '')]
+   
+class AddQuadJunction(bpy.types.Operator):
+    bl_idname = "object.add_quad_junction"
+    bl_label = "Add Quad Junction"
+    bl_options = {'REGISTER', 'UNDO'}
+    which_kind : bpy.props.EnumProperty(items=junction_enum, name='junction type', default='unipolar')
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None and context.active_object.type=='MESH' and context.mode == 'EDIT_MESH'
+    def execute(self, context):
+        self.report({'INFO'}, f"which kind: {self.which_kind}")
+        me_ob=context.active_object
+        if self.which_kind=='unipolar':
+          one_pole_junction(me_ob.data)
+        else:
+          four_pole_junction(me_ob.data)
+        print (f'{self.bl_idname}(ctx.active_object)')
+        return {'FINISHED'}
+
+    
+addon_keymaps = []
+
+def register():
+    
+    bpy.utils.register_class(ProjectOntoShapes)
+    bpy.utils.register_class(AlignPairs)
+    bpy.utils.register_class(LoopUncut)
+    bpy.utils.register_class(AddQuadJunction)
+    
+    # Add the hotkey
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
+    if kc:
+        km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D')
+        kmi1 = km.keymap_items.new(ProjectOntoShapes.bl_idname, type='P', value='PRESS', ctrl=True, alt=True, shift=True)
+        kmi2 = km.keymap_items.new(AlignPairs.bl_idname, type='L', value='PRESS', ctrl=True, alt=True, shift=True)
+        kmi3 = km.keymap_items.new(LoopUncut.bl_idname, type='U', value='PRESS', ctrl=True, alt=True, shift=True)
+        kmi4 = km.keymap_items.new(AddQuadJunction.bl_idname, type='J', value='PRESS', ctrl=True, alt=True, shift=True)
+        addon_keymaps.append((km, kmi1))
+        addon_keymaps.append((km, kmi2))
+        addon_keymaps.append((km, kmi3))
+        addon_keymaps.append((km, kmi4))
+
+
+def unregister():
+    
+    bpy.utils.unregister_class(ProjectOntoShapes)
+    bpy.utils.unregister_class(AlignPairs)
+    bpy.utils.unregister_class(LoopUncut)
+    bpy.utils.unregister_class(AddQuadJunction)
+    # Remove the hotkey
+    for km, kmi in addon_keymaps:
+        km.keymap_items.remove(kmi)
+    addon_keymaps.clear()
+if __name__=="__main__":
+    register()
